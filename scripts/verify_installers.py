@@ -96,7 +96,9 @@ def fixture(root: Path, game: str, language: str, fixture_dir: Path | None,
         (root / f"lang/{lang}/sounds").mkdir(parents=True)
         (root / f"lang/{lang}/dialog.tlk").write_bytes(make_tlk())
     (root / "override/M_cdsnd.lua").write_bytes(b"filenames_stringrefs['ORIGINAL'] = {1, 2}\n")
-    base_table = ("2DA V1.0\n-1\nORIGINAL\n" + "".join(f"{i} 1\n" for i in range(1, row_count + 1))).encode("ascii")
+    # Keep data rows wider than the two-token 2DA signature/header. WeiDU's
+    # COUNT_2DA_ROWS filters by token count; real CHARSND tables have many voices.
+    base_table = ("2DA V1.0\n-1\nORIGINAL CONTROL\n" + "".join(f"{i} 1 -1\n" for i in range(1, row_count + 1))).encode("ascii")
     ids = b"IDS V1.0\n79 BGEE_ACTION4\n82 BGEE_ACTION7\n92 IWDEE_REACT_TO_DIE_GENERAL2\n"
     if fixture_dir and row_count == 99:
         kind = "bgee" if game in ("bgee", "sod") else "bg2ee"
