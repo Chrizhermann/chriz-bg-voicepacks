@@ -1,0 +1,23 @@
+name: Verify voicepack installers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build all fourteen hash-pinned voicepacks
+        run: python scripts/build_release.py
+      - name: Install, inspect, reinstall, and uninstall with bundled WeiDU
+        run: python scripts/verify_installers.py
