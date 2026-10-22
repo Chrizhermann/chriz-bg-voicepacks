@@ -1,0 +1,36 @@
+{
+  "version": "1.1.0",
+  "menu_name": "Garithos",
+  "source_archive": "Lord Garithos v2.zip",
+  "source_archive_sha256": "677f93c93484d323cfc47b77bb82306eb83186be9baf096a9a8bcd9a36d778d3",
+  "subtitle_method": "Existing subtitles retained only for byte-identical audio, including files reassigned by the supplied v2 filenames. New bored clip transcribed locally with faster-whisper large-v3 and cross-checked with base.en; large-v3 recognizes picnic (0.981 confidence), where base.en misrecognizes pet neck. Punctuation reviewed. No direct human listening performed.",
+  "portraits": [
+    {"source_file": "gariL.bmp", "sha256": "8f2c79975edc0ee0302dcc099cade11940bce8ae400a96e242a000403bd3ce21"},
+    {"source_file": "gariM.bmp", "sha256": "25025992f761838b8a6ed2527c94babf4c1db84d2f710c376c1acb83f5c8bf37"}
+  ],
+  "clips": [
+    {"source_file": "garitho0.wav", "subtitle": "I hate working with these... people.", "sha256": "c354f4812829c57953a39b672af83fd838b96c637e2833294ca5e7366f83d518"},
+    {"source_file": "garitho1.wav", "subtitle": "Right.", "sha256": "086c887ffb059eff6ffaf44c2b976b56b1b2102a551bd97ee9236d38ffbd6fc3"},
+    {"source_file": "garitho8.wav", "subtitle": "Die, mongrel!", "sha256": "5b90dd57c35bf8d71a1b7124c3fc6e694e95ad2bb7bba7efa590c42d849ae7a1"},
+    {"source_file": "garitho9.wav", "subtitle": "In memory of Terenas!", "sha256": "0f315382d3d9148cf01862c83ba9c5ed4afde9afa50ad67c3f48a3cf91a3cdb4"},
+    {"source_file": "garithoa.wav", "subtitle": "Inhuman beast!", "sha256": "1dae4774f07063748dff1ed811bfaca069ae54026aa84afaf411456a8d567adf"},
+    {"source_file": "garithob.wav", "subtitle": "Those brainless dwarves are almost more trouble than they're worth. However, we'll need them on the front lines. I'll have to lead them myself.", "sha256": "23336985cd0b68afaa7bdb585b511102465a0af56461aa67aee565db6ccabf31"},
+    {"source_file": "garithod.wav", "subtitle": "Can't you idiots follow simple orders? There's a war on, and you louts are off having a picnic!", "sha256": "00994f2632e52d10613c5654c4e609ebfcb5d08c9554a4c5d501319385cf5b32"},
+    {"source_file": "garithof.wav", "subtitle": "We humans have to stick together.", "sha256": "dc3d5148d067cfe755d113d3dacc050e7bde364cf4663e480679671edd7c3dc1"},
+    {"source_file": "garithog.wav", "subtitle": "Humanity is in peril.", "sha256": "b9f39aceb65d059ac1e8762c4413276bed7ca11dcc9fd4919cb766b47fbafbe8"},
+    {"source_file": "garithoh.wav", "subtitle": "Ah, at last!", "sha256": "be08cd640dee0023bcd6373ceda44e0091981a18d05fa92087dddc7e2fa609c0"},
+    {"source_file": "garithoi.wav", "subtitle": "Let justice fall!", "sha256": "793f90d902baa5208fd3366a39ebffca2b0dc7e1fc475cf28b6dfcd95af4b004"},
+    {"source_file": "garithoj.wav", "subtitle": "Never trust an elf!", "sha256": "780d4b3954c5c43979ec58160a56066d43978a9ba1da5673a20abdd6220539bf"},
+    {"source_file": "garithok.wav", "subtitle": "Suits my purposes.", "sha256": "34f32e8e29e59101039e0934e7e7ca876edd80731d88176eacffb6db8b51b3b5"},
+    {"source_file": "garithol.wav", "subtitle": "", "sha256": "c54a6f15cb50a25dabe5ef2a5ae5138032983859b924009b0b1d558fa40ad9b2"},
+    {"source_file": "garithom.wav", "subtitle": "Is the nightmare finally over?", "sha256": "c66612caebd2f8d49abf81abf2d24a62acd2f1f1154d9ab56c82a940fdf68526"},
+    {"source_file": "garithon.wav", "subtitle": "What's the matter, demon? Are you afraid?", "sha256": "fbafb98756091cd969d4e9ef1c4dc19000d1753cb39f0421474068a7aae14d1b"},
+    {"source_file": "garithoo.wav", "subtitle": "There, your business is done. Now I want you wretched animals out of my city!", "sha256": "4beb2667d92ff233ecdd7c5d0a26d6e10f6099e61625f3b1e51f300b4ae9e00b"},
+    {"source_file": "garithop.wav", "subtitle": "Save your breath. I never trusted you vainglorious elves.", "sha256": "23c2a04ac24603cf1172f8787b2b60d39720edefd5735506671fd05bb94c5eaa"},
+    {"source_file": "garithos.wav", "subtitle": "If you want something done right, leave it to a human.", "sha256": "a822e3d4e0073786a0b76b32ef6e28f98d2022269a93408b8444fd3e548b18e5"},
+    {"source_file": "garithot.wav", "subtitle": "The only good non-human is a dead non-human.", "sha256": "65acaedf4c7a4d20251912e5124b2c332e1d90b3a3676e1efeebe40b6c0a5218"},
+    {"source_file": "garithou.wav", "subtitle": "The lesser races must be purged from the kingdom.", "sha256": "bbde351149c909d0724a8c88b885a6b7a80e3dda8470e31166ff4050bfc170a0"},
+    {"source_file": "garithov.wav", "subtitle": "These inhuman dogs must be slain.", "sha256": "7bce3eb104cc570d718d142d709d56b848866f5179662c39477c0593fd8b0fc0"},
+    {"source_file": "garithoz.wav", "subtitle": "Humanity will rise again.", "sha256": "bdde7bff4d589eae66c311c3a90ff51f90749ae3c112e80ddfe814f6dde352ca"}
+  ]
+}
