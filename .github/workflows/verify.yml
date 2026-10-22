@@ -21,3 +21,7 @@ jobs:
         run: python scripts/build_release.py
       - name: Install, inspect, reinstall, and uninstall with bundled WeiDU
         run: python scripts/verify_installers.py
+      - name: Confirm the rebuilt archives match the published 1.0.1 assets
+        run: python scripts/assemble_release.py --out-dir release-check
+      - name: Compile the builders and verifiers that need a local game or soundset
+        run: python -m py_compile scripts/build_ajantis.py scripts/verify_ajantis.py scripts/build_viconia.py scripts/verify_viconia.py scripts/build_garithos.py scripts/verify_garithos.py

@@ -1,5 +1,7 @@
 _work/
 _cache/
 dist/
+release/
+release-check/
 __pycache__/
 *.pyc
