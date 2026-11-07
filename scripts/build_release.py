@@ -33,19 +33,142 @@ PACKS = [
 ]
 
 PREFLIGHT = """REQUIRE_PREDICATE (GAME_IS ~bgee bg2ee eet~) @71
-REQUIRE_PREDICATE (FILE_EXISTS_IN_GAME ~charsnd.2da~) @72
-
-// EE 2.6 uses rows 1-99. Reject old or incompatible layouts before adding audio.
-COPY_EXISTING ~charsnd.2da~ ~override~
-  COUNT_2DA_COLS chriz_sound_cols
-  COUNT_2DA_ROWS chriz_sound_cols chriz_sound_rows
-  PATCH_IF (chriz_sound_rows != 99) BEGIN PATCH_FAIL @72 END
-  FOR (chriz_row = 0; chriz_row < 99; ++chriz_row) BEGIN
-    READ_2DA_ENTRY chriz_row 0 chriz_sound_cols chriz_label
-    PATCH_IF (chriz_label != chriz_row + 1) BEGIN PATCH_FAIL @72 END
-  END
-  BUT_ONLY
 """
+
+# The pinned EE Soundset Tool remains bundled unchanged for provenance and for other mods. These
+# wrappers deliberately own this project's write-through registration: an old 30-row table is
+# extended to the EE layout, and an existing column/menu mapping for this pack is rewritten.
+SOUNDSET_LAYOUTS = {
+    "bg2": [
+        "morale_break1", "happy", "unhappy_1", "unhappy_2", "breaking_pt", "leader1", "tired1", "bored1",
+        "battlecry1", "battlecry2", "battlecry3", "battlecry4", "battlecry5", "attack1", "attack2", "attack3",
+        "attack4", "damage1", "dying1", "hurt1", "forest", "city", "dungeon", "day", "night", "common1",
+        "common2", "common3", "common4", "common5", "common6", "action1", "action2", "action3", "action4",
+        "action5", "action6", "action7", "interaction1", "interaction2", "interaction3", "interaction4",
+        "interaction5", *(["padding"] * 6), "special1", "special2", "special3", "gen_death1", "specific_death",
+        "complimented1", "complimented2", "complimented3", "insulted1", "insulted2", "insulted3", "dialog_hostile",
+        "dialog_default", "action_rare1", "action_rare2", "criticalhit", "criticalmiss", "immune", "inventory",
+        "pickpocket", "shadows", "disrupted", "trap", *(["padding"] * 2), "select_rare1", "select_rare2",
+        "select_rare3", "select_rare4", *(["padding"] * 4), "morale_break2", "leader2", "tired2", "bored2",
+        "hurt2", "common7", "damage2", "damage3", "dying2", "gen_death2", *(["padding"] * 7),
+    ],
+    "bgee": [
+        "morale_break1", "happy", "unhappy_1", "unhappy_2", "breaking_pt", "leader1", "tired1", "bored1",
+        "battlecry1", "battlecry2", "battlecry3", "battlecry4", "battlecry5", "attack1", "attack2", "attack3",
+        "attack4", "damage1", "dying1", "hurt1", "forest", "city", "dungeon", "day", "night", "common1",
+        "common2", "common3", "common4", "common5", "common6", "action1", "action2", "action3", "select_rare1",
+        "select_rare2", "select_rare3", "select_rare4", "interaction1", "interaction2", "interaction3", "interaction4",
+        "interaction5", *(["padding"] * 6), "special1", "special2", "special3", "gen_death1", "specific_death",
+        "complimented1", "complimented2", "complimented3", "insulted1", "insulted2", "insulted3", "dialog_hostile",
+        "dialog_default", "action_rare1", "action_rare2", "criticalhit", "criticalmiss", "immune", "inventory",
+        "pickpocket", "shadows", "disrupted", "trap", *(["padding"] * 6), "action4", "action5", "action6", "action7",
+        "morale_break2", "leader2", "tired2", "bored2", "hurt2", "common7", "damage2", "damage3", "dying2",
+        "gen_death2", *(["padding"] * 7),
+    ],
+}
+assert all(len(layout) == 99 for layout in SOUNDSET_LAYOUTS.values())
+SOUNDSET_ARGUMENTS = sorted({slot for layout in SOUNDSET_LAYOUTS.values() for slot in layout if slot != "padding"})
+SOUNDSET_PADDING = " ".join("-1" for _ in range(99))
+
+
+def write_through_function() -> str:
+    args = "\n".join(f"    cd_{slot:<19} = \"-1\"" for slot in SOUNDSET_ARGUMENTS)
+    assignments = []
+    for game, layout in SOUNDSET_LAYOUTS.items():
+        assignments.append(f"  ACTION_IF GAME_IS ~{'bg2ee eet' if game == 'bg2' else 'bgee'}~ BEGIN")
+        assignments.extend(f"    OUTER_SET $cbvp_value(~{row}~) = cd_{slot}" if slot != "padding"
+                           else f"    OUTER_SET $cbvp_value(~{row}~) = 0 - 1"
+                           for row, slot in enumerate(layout, 1))
+        assignments.append("  END")
+    return f"""// Generated write-through wrapper. The bundled cd_add_soundset.tph is intentionally not edited.
+DEFINE_PATCH_FUNCTION cbvp_normalize_charsnd
+  RET writable
+BEGIN
+  SET writable = 0
+  COUNT_2DA_COLS cbvp_cols
+  PATCH_IF (cbvp_cols >= 2) BEGIN
+    COUNT_2DA_ROWS cbvp_cols cbvp_rows
+    FOR (cbvp_want = 1; cbvp_want <= 99; ++cbvp_want) BEGIN
+      SET cbvp_found = 0
+      FOR (cbvp_row = 0; cbvp_row < cbvp_rows; ++cbvp_row) BEGIN
+        READ_2DA_ENTRY cbvp_row 0 cbvp_cols cbvp_label
+        PATCH_IF (IS_AN_INT ~%cbvp_label%~) AND (cbvp_label = cbvp_want) BEGIN SET cbvp_found = 1 END
+      END
+      PATCH_IF NOT cbvp_found BEGIN
+        SPRINT cbvp_new ~%cbvp_want%~
+        FOR (cbvp_cell = 1; cbvp_cell < cbvp_cols; ++cbvp_cell) BEGIN SPRINT cbvp_new ~%cbvp_new% -1~ END
+        INSERT_2DA_ROW cbvp_rows cbvp_cols ~%cbvp_new%~
+        SET cbvp_rows += 1
+      END
+    END
+    SET writable = 1
+  END
+END
+
+DEFINE_ACTION_FUNCTION cbvp_write_soundset
+  INT_VAR
+{args}
+            cd_select_name       = "-1"
+  STR_VAR cd_name = ""
+  RET registered
+BEGIN
+  OUTER_SET registered = 0
+  ACTION_CLEAR_ARRAY cbvp_value
+{chr(10).join(assignments)}
+  ACTION_IF FILE_EXISTS_IN_GAME ~charsnd.2da~ BEGIN
+    COPY_EXISTING ~charsnd.2da~ ~override~
+      LPF cbvp_normalize_charsnd RET cbvp_writable = writable END
+      PATCH_IF cbvp_writable BEGIN
+        COUNT_2DA_COLS cbvp_cols
+        READ_2DA_ENTRIES_NOW cbvp_head (cbvp_cols - 1)
+        SET cbvp_column = 0
+        FOR (cbvp_h = 0; cbvp_h < cbvp_cols - 1; ++cbvp_h) BEGIN
+          READ_2DA_ENTRY_FORMER cbvp_head 0 cbvp_h cbvp_name
+          PATCH_IF (~%cbvp_name%~ STRING_EQUAL_CASE ~%cd_name%~) BEGIN SET cbvp_column = cbvp_h + 1 END
+        END
+      END
+    BUT_ONLY
+    ACTION_IF NOT cbvp_writable BEGIN
+      PRINT ~CHARSND.2DA cannot accept a player soundset column; %cd_name% was not registered.~
+    END ELSE BEGIN
+      ACTION_IF (cbvp_column = 0) BEGIN
+        APPEND_COL ~charsnd.2da~ ~$ $ %cd_name% {SOUNDSET_PADDING}~
+      END
+      COPY_EXISTING ~charsnd.2da~ ~override~
+        COUNT_2DA_COLS cbvp_cols
+        COUNT_2DA_ROWS cbvp_cols cbvp_rows
+        READ_2DA_ENTRIES_NOW cbvp_head (cbvp_cols - 1)
+        SET cbvp_column = 0
+        FOR (cbvp_h = 0; cbvp_h < cbvp_cols - 1; ++cbvp_h) BEGIN
+          READ_2DA_ENTRY_FORMER cbvp_head 0 cbvp_h cbvp_name
+          PATCH_IF (~%cbvp_name%~ STRING_EQUAL_CASE ~%cd_name%~) BEGIN SET cbvp_column = cbvp_h + 1 END
+        END
+        FOR (cbvp_row = 0; cbvp_row < cbvp_rows; ++cbvp_row) BEGIN
+          READ_2DA_ENTRY cbvp_row 0 cbvp_cols cbvp_label
+          PATCH_IF (IS_AN_INT ~%cbvp_label%~) AND (cbvp_label >= 1) AND (cbvp_label <= 99) BEGIN
+            SET cbvp_value_at_row = $cbvp_value(~%cbvp_label%~)
+            SET_2DA_ENTRY cbvp_row cbvp_column cbvp_cols ~%cbvp_value_at_row%~
+          END
+        END
+      BUT_ONLY
+      ACTION_IF FILE_EXISTS_IN_GAME ~M_cdsnd.lua~ BEGIN
+        COPY_EXISTING ~M_cdsnd.lua~ ~override~
+          REPLACE_TEXTUALLY ~^[ %TAB%]*filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['\"]%cd_name%['\"][ %TAB%]*\][ %TAB%]*=[^%WNL%]*%WNL%?~ ~~
+        BUT_ONLY
+      END ELSE BEGIN
+        COPY ~%MOD_FOLDER%/tph/cbvp_m_cdsnd.lua~ ~override/M_cdsnd.lua~
+      END
+      APPEND ~M_cdsnd.lua~ ~filenames_stringrefs['%cd_name%'] = {{%cd_select_name%, 2}}~
+      OUTER_SET registered = 1
+    END
+  END ELSE BEGIN
+    PRINT ~CHARSND.2DA is unavailable; %cd_name% was not registered.~
+  END
+END
+"""
+
+
+WRITE_THROUGH_FUNCTION = write_through_function()
 
 
 def sha256(data: bytes) -> str:
@@ -104,6 +227,10 @@ def update_installer(files: dict[str, bytes], mod: str, version: str) -> dict[st
         raise ValueError(f"Unexpected installer shape: {mod}")
     tp = tp.replace("\nLANGUAGE ", f"\nVERSION ~{version}~\n\nLANGUAGE ", 1)
     tp = tp.replace("BEGIN @0\n", f"BEGIN @0\n\n{PREFLIGHT}", 1)
+    tp = tp.replace("INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~\n", "")
+    if "LAF cd_add_soundset" not in tp:
+        raise ValueError(f"Soundset helper call missing: {mod}")
+    tp = tp.replace("LAF cd_add_soundset", "INCLUDE ~%MOD_FOLDER%/tph/cbvp_write_soundset.tpa~\n\nLAF cbvp_write_soundset")
     if tp.count("~lang/en_us/sounds~") != 1:
         raise ValueError(f"Unexpected sounds destination: {mod}")
     tp = tp.replace("~lang/en_us/sounds~", "~lang/%EE_LANGUAGE%/sounds~")
@@ -111,9 +238,11 @@ def update_installer(files: dict[str, bytes], mod: str, version: str) -> dict[st
     tra = re.sub(r"(?m)^@71\s*=\s*~[^~]*~\s*$", "", tra)
     tra = tra.rstrip() + "\n\n// Installation prerequisites\n"
     tra += "@71 = ~This voicepack requires Baldur's Gate: Enhanced Edition (with or without Siege of Dragonspear), Baldur's Gate II: Enhanced Edition, or Enhanced Edition Trilogy (EET).~\n"
-    tra += "@72 = ~This voicepack requires the EE 2.6 soundset table (charsnd.2da rows 1-99). Your game has an older or incompatible soundset layout.~\n"
+    tra += "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.\n"
     updated[tp_path] = tp.encode("utf-8")
     updated[tra_path] = tra.encode("utf-8")
+    updated[f"{mod}/tph/cbvp_m_cdsnd.lua"] = b"filenames_stringrefs = {}\n"
+    updated[f"{mod}/tph/cbvp_write_soundset.tpa"] = WRITE_THROUGH_FUNCTION.encode("utf-8")
     return updated
 
 

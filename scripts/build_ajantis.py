@@ -13,7 +13,7 @@ import subprocess
 import wave
 from pathlib import Path
 
-from build_release import HELPER_SHA256, PREFLIGHT, write_zip
+from build_release import HELPER_SHA256, PREFLIGHT, WRITE_THROUGH_FUNCTION, write_zip
 
 VERSION = "2.0.0"
 MOD = "cd_ajanti"
@@ -39,28 +39,6 @@ NATIVE_SLOTS = {
     38: ("select_rare4", 59, "z_"), 53: ("gen_death1", 43, "w"),
 }
 PLAYER_SOURCE_SLOTS = set(range(1, 39)) | {53} | set(range(63, 74)) | set(range(75, 100))
-
-DUPLICATE_GUARD = r"""
-// Fail closed on an orphan/duplicate column; normal WeiDU reinstall removes it first.
-COPY_EXISTING ~charsnd.2da~ ~override~
-  COUNT_2DA_COLS ajantis_cols
-  READ_2DA_ENTRIES_NOW ajantis_header (ajantis_cols - 1)
-  FOR (ajantis_col = 0; ajantis_col < ajantis_cols - 1; ++ajantis_col) BEGIN
-    READ_2DA_ENTRY_FORMER ajantis_header 0 ajantis_col ajantis_header_name
-    PATCH_IF (~%ajantis_header_name%~ STRING_EQUAL_CASE ~AJANTI~) BEGIN
-      PATCH_FAIL @73
-    END
-  END
-  BUT_ONLY
-
-ACTION_IF FILE_EXISTS_IN_GAME ~M_cdsnd.lua~ BEGIN
-  COPY_EXISTING ~M_cdsnd.lua~ ~override~
-    COUNT_REGEXP_INSTANCES ~^[ %TAB%]*filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['"]AJANTI['"][ %TAB%]*\][ %TAB%]*=~ ajantis_menu_count
-    PATCH_IF (ajantis_menu_count > 0) BEGIN PATCH_FAIL @73 END
-    BUT_ONLY
-END
-"""
-
 
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -220,9 +198,8 @@ def build(source: Path, output: Path, helper: Path, weidu: Path, ffmpeg: str) ->
         tra_lines += [f"// BGEE AJANTI.CRE slot {row['source_slot']} -> {row['slot_key']}; {row['source_resref']}",
                       f"@{row['tra']} = ~{row['subtitle']}~ [{row['target_resref']}]"]
     tra_lines += ["", f"@70 = ~{MENU_NAME}~",
-                  "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
-                  "@72 = ~This voicepack requires the EE 2.6 soundset table (charsnd.2da rows 1-99). Your game has an older or incompatible soundset layout.~",
-                  "@73 = ~Ajantis is already registered. Uninstall the old Ajantis component before installing this replacement.~"]
+                   "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
+                   "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~"]
     (mod_root / "english/setup.tra").write_text("\n".join(tra_lines) + "\n", encoding="utf-8")
     tp2 = f"""BACKUP ~{MOD}/backup~
 SUPPORT ~https://github.com/Chrizhermann/chriz-bg-voicepacks~
@@ -235,8 +212,7 @@ DESIGNATED 0
 LABEL ~Chriz-Ajantis-Companion-Soundset~
 
 {PREFLIGHT}
-{DUPLICATE_GUARD}
-INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~
+INCLUDE ~%MOD_FOLDER%/tph/cbvp_write_soundset.tpa~
 
 // Explicit allowlist: an archive overlay may leave retired WAVs in the source
 // folder. Never copy those files back; empty slots must remain truly silent.
@@ -244,7 +220,9 @@ INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~
     for r in records:
         destination = "override" if r["folder"] == "wav" else "lang/%EE_LANGUAGE%/sounds"
         tp2 += f"COPY ~%MOD_FOLDER%/{r['folder']}/{r['target_resref']}.wav~ ~{destination}/{r['target_resref']}.wav~\n"
-    tp2 += "\nLAF cd_add_soundset\n  INT_VAR\n"
+    (mod_root / "tph/cbvp_m_cdsnd.lua").write_text("filenames_stringrefs = {}\n", encoding="ascii")
+    (mod_root / "tph/cbvp_write_soundset.tpa").write_text(WRITE_THROUGH_FUNCTION, encoding="utf-8")
+    tp2 += "\nLAF cbvp_write_soundset\n  INT_VAR\n"
     tp2 += "".join(f"    cd_{r['slot_key']:<17} = RESOLVE_STR_REF(@{r['tra']})\n" for r in sorted(records, key=lambda r: r["slot_key"]))
     tp2 += f'    cd_select_name       = RESOLVE_STR_REF(@70)\n  STR_VAR cd_name = "{PREFIX}"\nEND\n'
     (mod_root / f"{MOD}.tp2").write_text(tp2, encoding="utf-8")
