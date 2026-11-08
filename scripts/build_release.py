@@ -238,7 +238,7 @@ def update_installer(files: dict[str, bytes], mod: str, version: str) -> dict[st
     tra = re.sub(r"(?m)^@71\s*=\s*~[^~]*~\s*$", "", tra)
     tra = tra.rstrip() + "\n\n// Installation prerequisites\n"
     tra += "@71 = ~This voicepack requires Baldur's Gate: Enhanced Edition (with or without Siege of Dragonspear), Baldur's Gate II: Enhanced Edition, or Enhanced Edition Trilogy (EET).~\n"
-    tra += "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.\n"
+    tra += "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~\n"
     updated[tp_path] = tp.encode("utf-8")
     updated[tra_path] = tra.encode("utf-8")
     updated[f"{mod}/tph/cbvp_m_cdsnd.lua"] = b"filenames_stringrefs = {}\n"
