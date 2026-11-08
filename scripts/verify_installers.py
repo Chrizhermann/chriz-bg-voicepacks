@@ -255,11 +255,14 @@ def changed_input_matrix(work: Path, release_dir: Path) -> list[dict]:
     for index, (case, count, missing) in enumerate(cases):
         root = work / f"changed-{index}"
         game = "bgee"
-        fixture(root, game, "en_us", None, row_count=count, missing_table=missing)
+        base_table = fixture(root, game, "en_us", None, row_count=count, missing_table=missing)
+        override_table = root / "override/charsnd.2da"
         for pack in PACKS:
             unpack_release(release_dir, root, pack)
             mod = pack[1]
-            before = (root / "override/charsnd.2da").read_bytes() if not missing else b""
+            # The fixture keeps CHARSND.2DA in the biff, so a pack that finds no override
+            # copy starts from the biff table.
+            before = b"" if missing else (override_table.read_bytes() if override_table.exists() else base_table)
             output = run_weidu(root, mod, "en_us")
             assert "SUCCESSFULLY INSTALLED" in output and "SKIPPING:" not in output
             if missing:
