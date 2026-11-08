@@ -20,7 +20,7 @@ from build_ajantis import GameResources
 import verify_installers as common
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 HELPER_SHA256 = "a581fae61b165c0c8af8a6ad7136b7b1b825e14d379c528bfb89453a06f843c5"
 # Independent expectations: original companion CRE tables, not the builder's slot map.
 VARIANTS = {
@@ -438,7 +438,10 @@ def changed_input_case(work: Path, files: dict[str, bytes], fixtures: Path, case
     if case == "duplicate-menu":
         with (root / "override/M_cdsnd.lua").open("ab") as stream:
             stream.write(f"filenames_stringrefs['{PREFIX}'] = {{1, 2}}\n".encode("ascii"))
-    previous = (root / "override/charsnd.2da").read_bytes() if case != "missing-table" else b""
+    # The untouched fixture table lives in its BIF; changed-layout cases create
+    # an override explicitly. Preserve the BIF bytes as the baseline otherwise.
+    table_path = root / "override/charsnd.2da"
+    previous = b"" if case == "missing-table" else (table_path.read_bytes() if table_path.exists() else previous)
     baseline, original_tlks = game_tree(root), tlk_snapshot(root)
     copy_package(files, root)
     output = run_step(root, "en_us", "changed-install")

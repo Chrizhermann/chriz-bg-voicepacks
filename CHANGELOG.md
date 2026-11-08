@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+- Every pack now writes its owned registration regardless of the existing
+  `CHARSND.2DA` layout: an old 30-row table is extended to the EE layout, and
+  an existing owned column or voice-menu entry is rewritten.
+- Bumped the fourteen generated packs from 1.0.1 to 1.0.2; Ajantis from 2.0.0
+  to 2.0.1; Viconia (BG1 and BG2) from 1.0.0 to 1.0.1; and Garithos from 1.1.0
+  to 1.1.1.
+- Audio, assigned slots, and subtitles are unchanged.
+- The release manifest records each pack's own version and new archive
+  checksums.
+
 ## 1.1.0
 
 - Added Ajantis 2.0.0 (26 assigned slots): his original BG1 companion voice

@@ -2,32 +2,32 @@
 
 Curated player soundsets, mostly from Baldur's Gate companions, for **Baldur's Gate: Enhanced Edition**, **Siege of Dragonspear**, **Baldur's Gate II: Enhanced Edition**, and **Enhanced Edition Trilogy**. Use the EE 2.6 soundset format or a compatible later version. Each release ZIP works in all these games and contains one WeiDU setup executable beside its matching `cd_*` mod folder.
 
-Download the current [1.1.0 release](https://github.com/Chrizhermann/chriz-bg-voicepacks/releases/tag/v1.1.0). The 1998 original BG1 and pre-2.6 Enhanced Editions are not supported by these installers.
+Download the current [1.2.0 release](https://github.com/Chrizhermann/chriz-bg-voicepacks/releases/tag/v1.2.0). The 1998 original BG1 and pre-2.6 Enhanced Editions are not supported by these installers.
 
-## Voicepacks in release 1.1.0
+## Voicepacks in release 1.2.0
 
-Release 1.1.0 adds Ajantis, Viconia (BG1), Viconia (BG2), and Garithos. The fourteen 1.0.1 packs are unchanged: the release carries the same 1.0.1 files with the same checksums, so existing installations need no update. Each pack keeps its own version number.
+Release 1.2.0 updates every installer so it writes its owned voice registration regardless of an older CHARSND.2DA layout or an existing registration. The fourteen generated packs are 1.0.2; Ajantis is 2.0.1; Viconia (BG1 and BG2) is 1.0.1; and Garithos is 1.1.1. Audio and subtitles are unchanged.
 
 | Voicepack | Version | Assigned slots | Notes |
 | --- | --- | ---: | --- |
-| Neera | 1.0.1 | 53 | BG:EE, BG2:EE, and Siege of Dragonspear recordings |
-| Safana (BG1) | 1.0.1 | 58 | BG1-first set with BG2 bonus-voice vocalizations and limited SoD filler |
-| Safana (SoD) | 1.0.1 | 48 | Consistent Siege of Dragonspear voice |
-| Jaheira (BG1) | 1.0.1 | 53 | Original BG1 voice with same-actress BG2 filler |
-| Jaheira (BG2) | 1.0.1 | 40 | BG2/Throne of Bhaal voice with the BG1 death reaction |
-| Yeslick | 1.0.1 | 38 | All surviving original BG1 companion lines |
-| Edwin (BG1) | 1.0.1 | 55 | BG1 voice with same-actor BG2 filler |
-| Edwin (BG2) | 1.0.1 | 45 | BG2/Throne of Bhaal voice with BG1 death reactions |
-| Aerie | 1.0.1 | 38 | Genuine BG2/Throne of Bhaal companion recordings only |
-| Imoen (BG1) | 1.0.1 | 26 | Era-pure original BG1 voice |
-| Imoen (BG2) | 1.0.1 | 39 | Mature BG2/Throne of Bhaal voice |
-| Sarevok | 1.0.1 | 36 | Redeemed Chaotic-Good Throne of Bhaal companion variant |
-| Amelyssan | 1.0.1 | 17 | Deliberately sparse; 44 slots intentionally vacant; no TTS |
-| Gromnir Il-Khan | 1.0.1 | 10 | Deliberately sparse; 51 slots intentionally vacant; no TTS |
-| Ajantis | 2.0.0 | 26 | Original BG1 companion voice only; unrecorded slots stay empty |
-| Viconia (BG1) | 1.0.0 | 27 | Original BG1 companion voice only |
-| Viconia (BG2) | 1.0.0 | 39 | Original BG2/Throne of Bhaal companion voice only |
-| Garithos | 1.1.0 | 23 | IAIWE's Lord Garithos soundset, with IAIWE's two portraits as extras |
+| Neera | 1.0.2 | 53 | BG:EE, BG2:EE, and Siege of Dragonspear recordings |
+| Safana (BG1) | 1.0.2 | 58 | BG1-first set with BG2 bonus-voice vocalizations and limited SoD filler |
+| Safana (SoD) | 1.0.2 | 48 | Consistent Siege of Dragonspear voice |
+| Jaheira (BG1) | 1.0.2 | 53 | Original BG1 voice with same-actress BG2 filler |
+| Jaheira (BG2) | 1.0.2 | 40 | BG2/Throne of Bhaal voice with the BG1 death reaction |
+| Yeslick | 1.0.2 | 38 | All surviving original BG1 companion lines |
+| Edwin (BG1) | 1.0.2 | 55 | BG1 voice with same-actor BG2 filler |
+| Edwin (BG2) | 1.0.2 | 45 | BG2/Throne of Bhaal voice with BG1 death reactions |
+| Aerie | 1.0.2 | 38 | Genuine BG2/Throne of Bhaal companion recordings only |
+| Imoen (BG1) | 1.0.2 | 26 | Era-pure original BG1 voice |
+| Imoen (BG2) | 1.0.2 | 39 | Mature BG2/Throne of Bhaal voice |
+| Sarevok | 1.0.2 | 36 | Redeemed Chaotic-Good Throne of Bhaal companion variant |
+| Amelyssan | 1.0.2 | 17 | Deliberately sparse; 44 slots intentionally vacant; no TTS |
+| Gromnir Il-Khan | 1.0.2 | 10 | Deliberately sparse; 51 slots intentionally vacant; no TTS |
+| Ajantis | 2.0.1 | 26 | Original BG1 companion voice only; unrecorded slots stay empty |
+| Viconia (BG1) | 1.0.1 | 27 | Original BG1 companion voice only |
+| Viconia (BG2) | 1.0.1 | 39 | Original BG2/Throne of Bhaal companion voice only |
+| Garithos | 1.1.1 | 23 | IAIWE's Lord Garithos soundset, with IAIWE's two portraits as extras |
 
 Ajantis, Viconia, and Garithos replace earlier builds that were not part of a public release. Their installers keep the same mod names, so WeiDU can replace such a build with **Reinstall**; each pack's own readme explains this.
 
@@ -42,7 +42,7 @@ The release includes a `SHA256SUMS` file and a machine-readable manifest. The pu
 
 ## Compatibility and updates
 
-Every installer checks the game and the soundset table before copying audio and uses the game's selected language folder. Version 1.0.1 brought this consistent check to the original fourteen packs: version 1.0.0 had blocked BG:EE in the Amelyssan and Gromnir installers and documented only BG2:EE/EET support. The new packs use the same check.
+Every installer checks that the game is a supported EE game and uses the game's selected language folder. It then extends an old 30-row CHARSND.2DA table to the EE layout and rewrites any existing column or voice-menu entry owned by that pack. Version 1.0.1 brought BG:EE support to the original fourteen packs; version 1.2.0 makes their registrations write through existing table state.
 
 The included EE Soundset Tool helper automatically selects the game's row order. BG:EE uses rows 35-38 for rare selection responses and 79-82 for action acknowledgements 4-7. BG2:EE/EET uses rows 35-38 for those actions and 75-78 for rare selection responses. You do not need separate downloads or renamed audio. Each line keeps its original meaning: a BG1 voice's rare selection lines stay rare selection lines in BG2:EE, and a BG2 voice's action acknowledgements stay action acknowledgements in BG:EE.
 
@@ -56,14 +56,14 @@ Validation uses the actual included WeiDU executables in disposable game fixture
 
 Python 3.11+ and the standard library are sufficient for the builders. Audio and installer executables stay in release assets, outside the source repository. The verifiers run the bundled Windows WeiDU executables and therefore need Windows. Every output directory must be new or empty.
 
-**The fourteen 1.0.1 packs.** The shared [compatibility recipe](docs/compatibility-recipe.md) applies to all fourteen. The build fetches and verifies the immutable 1.0.0 source ZIPs and writes the archives, manifest, and checksums to `dist/`:
+**The fourteen 1.0.2 packs.** The shared [compatibility recipe](docs/compatibility-recipe.md) applies to all fourteen. The build fetches and verifies the immutable 1.0.0 source ZIPs and writes the archives, manifest, and checksums to `dist/`:
 
 ```powershell
 python scripts/build_release.py
 python scripts/verify_installers.py
 ```
 
-**Ajantis and Viconia** are rebuilt from an unmodified English game used as a read-only source: BG:EE for Ajantis and Viconia (BG1), BG2:EE for Viconia (BG2). They need `ffmpeg` and `ffprobe`, plus `cd_add_soundset.tph` and the setup executable from any 1.0.1 pack (`--helper`, `--weidu`). The verifiers also need CHARSND.2DA/SNDSLOT.IDS captures in `bgee/` and `bg2ee/` folders (`--fixtures`):
+**Ajantis and Viconia** are rebuilt from an unmodified English game used as a read-only source: BG:EE for Ajantis and Viconia (BG1), BG2:EE for Viconia (BG2). They need `ffmpeg` and `ffprobe`, plus `cd_add_soundset.tph` and the setup executable from any 1.0.2 pack (`--helper`, `--weidu`). The verifiers also need CHARSND.2DA/SNDSLOT.IDS captures in `bgee/` and `bg2ee/` folders (`--fixtures`):
 
 ```powershell
 python scripts/build_ajantis.py --source <BG:EE> --out <new dir> --helper <tph> --weidu <exe>
@@ -77,10 +77,10 @@ python scripts/verify_viconia.py --variant bg1 --package-dir <new dir>/package -
 
 ```powershell
 python scripts/build_garithos.py --source <GARITHOS> --helper <tph> --weidu <exe> --output <new dir>
-python scripts/verify_garithos.py --archive <new dir>/garithos-player-voicepack-v1.1.0.zip --source <GARITHOS> --fixtures <captures>
+python scripts/verify_garithos.py --archive <new dir>/garithos-player-voicepack-v1.1.1.zip --source <GARITHOS> --fixtures <captures>
 ```
 
-**The release.** `assemble_release.py` requires the fourteen rebuilt archives to match the published 1.0.1 bytes, checks the other archives' helper, setup executable, and provenance, and writes the combined manifest and checksums:
+**The release.** `assemble_release.py` requires the fourteen rebuilt archives to match the pinned 1.0.2 bytes, checks the other archives' helper, setup executable, and provenance, and writes the combined manifest and checksums:
 
 ```powershell
 python scripts/assemble_release.py --packs-dir dist --built <ajantis zip> --built <viconia-bg1 zip> --built <viconia-bg2 zip> --built <garithos zip>

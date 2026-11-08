@@ -14,7 +14,7 @@ from pathlib import Path
 from build_ajantis import GameResources, sha256
 from build_release import HELPER_SHA256, PREFLIGHT, WRITE_THROUGH_FUNCTION, write_zip
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 # Original BGEE VICONI.CRE slot -> helper name, TRA id, resource suffix.
 # BGEE's 35-38 are rare selection despite their legacy SELECT_ACTION names.
@@ -169,7 +169,7 @@ def build(variant: str, source: Path, output: Path, helper: Path, weidu: Path, f
                       f"@{row['tra']} = ~{row['subtitle']}~ [{row['target_resref']}]"]
     tra_lines += ["", f"@70 = ~{spec['menu']}~",
                    "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
-                   "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~"]
+                   "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~"]
     (mod_root / "english/setup.tra").write_text("\n".join(tra_lines) + "\n", encoding="utf-8")
     tp2 = f"""BACKUP ~{mod}/backup~
 SUPPORT ~https://github.com/Chrizhermann/chriz-bg-voicepacks~

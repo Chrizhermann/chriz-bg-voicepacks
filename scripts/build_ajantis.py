@@ -15,7 +15,7 @@ from pathlib import Path
 
 from build_release import HELPER_SHA256, PREFLIGHT, WRITE_THROUGH_FUNCTION, write_zip
 
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 MOD = "cd_ajanti"
 PREFIX = "AJANTI"
 MENU_NAME = "Ajantis (BG1 companion)"
@@ -199,7 +199,7 @@ def build(source: Path, output: Path, helper: Path, weidu: Path, ffmpeg: str) ->
                       f"@{row['tra']} = ~{row['subtitle']}~ [{row['target_resref']}]"]
     tra_lines += ["", f"@70 = ~{MENU_NAME}~",
                    "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
-                   "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~"]
+                   "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~"]
     (mod_root / "english/setup.tra").write_text("\n".join(tra_lines) + "\n", encoding="utf-8")
     tp2 = f"""BACKUP ~{MOD}/backup~
 SUPPORT ~https://github.com/Chrizhermann/chriz-bg-voicepacks~

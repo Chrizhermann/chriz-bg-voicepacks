@@ -12,7 +12,7 @@ from build_release import HELPER_SHA256, PREFLIGHT, ROOT, WRITE_THROUGH_FUNCTION
 
 MOD = "cd_garith"
 PREFIX = "CGARIT"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 WEIDU_SHA256 = "0d17e26e3f3ef5b36796eb0ee8ae73cb851d8b62c9702c2e224da2945caafb75"
 
 # The supplied filenames already follow the documented legacy BG2 convention.
@@ -131,7 +131,7 @@ END
         "@0 = ~Garithos - player voicepack~", *translations,
         "@70 = ~Garithos~",
         "@71 = ~This voicepack requires Baldur's Gate: Enhanced Edition (with or without Siege of Dragonspear), Baldur's Gate II: Enhanced Edition, or Enhanced Edition Trilogy (EET).~",
-        "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~", "",
+        "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~", "",
     ])
     files[f"{MOD}/{MOD}.tp2"] = tp.encode("ascii")
     files[f"{MOD}/english/setup.tra"] = tra.encode("ascii")
@@ -182,7 +182,8 @@ CHANGES FROM 1.0.0 (the supplied Lord Garithos v2.zip)
 SUPPORTED GAMES
 Baldur's Gate: Enhanced Edition, with or without Siege of Dragonspear;
 Baldur's Gate II: Enhanced Edition; Enhanced Edition Trilogy (EET).
-Requires the Enhanced Edition 2.6-style 99-row soundset table.
+The installer extends older CHARSND.2DA tables to the EE layout and rewrites
+Garithos's existing registration when present.
 Not an installer for the original non-Enhanced BG1/BG2 games or Icewind Dale.
 English audio and subtitles are installed into the language you select.
 

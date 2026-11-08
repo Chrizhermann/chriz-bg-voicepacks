@@ -101,7 +101,7 @@ def decode_source(data: bytes, ffmpeg: str) -> tuple[int, bytes]:
 
 def check_package(files: dict[str, bytes], source: Path, ffmpeg: str) -> dict:
     provenance = json.loads(files[f"{MOD}/provenance.json"])
-    assert provenance["version"] == "2.0.0" and provenance["menu_name"] == MENU
+    assert provenance["version"] == "2.0.1" and provenance["menu_name"] == MENU
     helper_hash = common.sha256(files[f"{MOD}/tph/cd_add_soundset.tph"])
     assert helper_hash == provenance["helper_sha256"] == "a581fae61b165c0c8af8a6ad7136b7b1b825e14d379c528bfb89453a06f843c5"
     records = provenance["slots"]
@@ -111,7 +111,7 @@ def check_package(files: dict[str, bytes], source: Path, ffmpeg: str) -> dict:
     tp = files[f"{MOD}/{MOD}.tp2"].decode("utf-8-sig")
     tra = files[f"{MOD}/english/setup.tra"].decode("utf-8-sig")
     assert re.search(r'cd_name\s*=\s*"AJANTI"', tp)
-    assert re.search(r"VERSION\s+~2\.0\.0~", tp)
+    assert re.search(r"VERSION\s+~2\.0\.1~", tp)
     calls_list = common.SLOT_CALL.findall(tp)
     calls = {key: int(ref) for key, ref in calls_list}
     assert len(calls) == len(calls_list), "Duplicate slot assignments"
@@ -383,7 +383,10 @@ def changed_input_case(work: Path, files: dict[str, bytes], fixtures: Path, case
     if case == "duplicate-menu":
         with (root / "override/M_cdsnd.lua").open("ab") as stream:
             stream.write(b"filenames_stringrefs['AJANTI'] = {1, 2}\n")
-    previous = (root / "override/charsnd.2da").read_bytes() if case != "missing-table" else b""
+    # The untouched fixture table lives in its BIF; changed-layout cases create
+    # an override explicitly. Preserve the BIF bytes as the baseline otherwise.
+    table_path = root / "override/charsnd.2da"
+    previous = b"" if case == "missing-table" else (table_path.read_bytes() if table_path.exists() else previous)
     baseline, original_tlks = game_tree(root), tlk_snapshot(root)
     copy_package(files, root)
     output = run_step(root, "en_us", "changed-install")
@@ -473,7 +476,7 @@ def main() -> None:
     legacy = read_package(args.legacy_dir, legacy=True) if args.legacy_dir else None
     args.work_dir.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="ajantis-installer-tests-", dir=args.work_dir))
-    report = {"version": "2.0.0", "scope": "Actual WeiDU in disposable fixtures; source games read-only; no engine launched",
+    report = {"version": "2.0.1", "scope": "Actual WeiDU in disposable fixtures; source games read-only; no engine launched",
               "work": str(work), "provenance": provenance, "positive": [], "changedInput": [], "legacy": []}
     try:
         for game in GAMES:

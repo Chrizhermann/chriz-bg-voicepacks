@@ -13,7 +13,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "https://github.com/Chrizhermann/chriz-bg-voicepacks/releases/download/v1.0.0"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 HELPER_SHA256 = "a581fae61b165c0c8af8a6ad7136b7b1b825e14d379c528bfb89453a06f843c5"
 PACKS = [
     ("neera", "cd_neera", 53, "23fb004e15ce4590e4747e2a4b93a527cf91b2d1d1c771cd5944f1f12b40aa65"),
@@ -68,9 +68,6 @@ SOUNDSET_LAYOUTS = {
 }
 assert all(len(layout) == 99 for layout in SOUNDSET_LAYOUTS.values())
 SOUNDSET_ARGUMENTS = sorted({slot for layout in SOUNDSET_LAYOUTS.values() for slot in layout if slot != "padding"})
-SOUNDSET_PADDING = " ".join("-1" for _ in range(99))
-
-
 def write_through_function() -> str:
     args = "\n".join(f"    cd_{slot:<19} = \"-1\"" for slot in SOUNDSET_ARGUMENTS)
     assignments = []
@@ -82,9 +79,10 @@ def write_through_function() -> str:
         assignments.append("  END")
     return f"""// Generated write-through wrapper. The bundled cd_add_soundset.tph is intentionally not edited.
 DEFINE_PATCH_FUNCTION cbvp_normalize_charsnd
-  RET writable
+  RET writable rows
 BEGIN
   SET writable = 0
+  SET rows = 0
   COUNT_2DA_COLS cbvp_cols
   PATCH_IF (cbvp_cols >= 2) BEGIN
     COUNT_2DA_ROWS cbvp_cols cbvp_rows
@@ -101,6 +99,7 @@ BEGIN
         SET cbvp_rows += 1
       END
     END
+    SET rows = cbvp_rows
     SET writable = 1
   END
 END
@@ -117,7 +116,7 @@ BEGIN
 {chr(10).join(assignments)}
   ACTION_IF FILE_EXISTS_IN_GAME ~charsnd.2da~ BEGIN
     COPY_EXISTING ~charsnd.2da~ ~override~
-      LPF cbvp_normalize_charsnd RET cbvp_writable = writable END
+      LPF cbvp_normalize_charsnd RET cbvp_writable = writable cbvp_rows = rows END
       PATCH_IF cbvp_writable BEGIN
         COUNT_2DA_COLS cbvp_cols
         READ_2DA_ENTRIES_NOW cbvp_head (cbvp_cols - 1)
@@ -132,7 +131,11 @@ BEGIN
       PRINT ~CHARSND.2DA cannot accept a player soundset column; %cd_name% was not registered.~
     END ELSE BEGIN
       ACTION_IF (cbvp_column = 0) BEGIN
-        APPEND_COL ~charsnd.2da~ ~$ $ %cd_name% {SOUNDSET_PADDING}~
+        OUTER_TEXT_SPRINT cbvp_append ~$ $ %cd_name%~
+        OUTER_FOR (cbvp_pad = 0; cbvp_pad < cbvp_rows; ++cbvp_pad) BEGIN
+          OUTER_TEXT_SPRINT cbvp_append ~%cbvp_append% -1~
+        END
+        APPEND_COL ~charsnd.2da~ ~%cbvp_append%~
       END
       COPY_EXISTING ~charsnd.2da~ ~override~
         COUNT_2DA_COLS cbvp_cols
@@ -151,9 +154,10 @@ BEGIN
           END
         END
       BUT_ONLY
+      OUTER_SPRINT cbvp_menu_registration EVALUATE_BUFFER ~filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['\"]%cd_name%['\"][ %TAB%]*\][ %TAB%]*=[^%WNL%%LNL%%MNL%]*~
       ACTION_IF FILE_EXISTS_IN_GAME ~M_cdsnd.lua~ BEGIN
         COPY_EXISTING ~M_cdsnd.lua~ ~override~
-          REPLACE_TEXTUALLY ~^[ %TAB%]*filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['\"]%cd_name%['\"][ %TAB%]*\][ %TAB%]*=[^%WNL%]*%WNL%?~ ~~
+          REPLACE_TEXTUALLY CASE_INSENSITIVE ~%cbvp_menu_registration%~ ~~
         BUT_ONLY
       END ELSE BEGIN
         COPY ~%MOD_FOLDER%/tph/cbvp_m_cdsnd.lua~ ~override/M_cdsnd.lua~
@@ -238,7 +242,7 @@ def update_installer(files: dict[str, bytes], mod: str, version: str) -> dict[st
     tra = re.sub(r"(?m)^@71\s*=\s*~[^~]*~\s*$", "", tra)
     tra = tra.rstrip() + "\n\n// Installation prerequisites\n"
     tra += "@71 = ~This voicepack requires Baldur's Gate: Enhanced Edition (with or without Siege of Dragonspear), Baldur's Gate II: Enhanced Edition, or Enhanced Edition Trilogy (EET).~\n"
-    tra += "@72 = ~CHARSND.2DA was unavailable or could not accept this player soundset; this pack was not registered.~\n"
+    tra += "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~\n"
     updated[tp_path] = tp.encode("utf-8")
     updated[tra_path] = tra.encode("utf-8")
     updated[f"{mod}/tph/cbvp_m_cdsnd.lua"] = b"filenames_stringrefs = {}\n"

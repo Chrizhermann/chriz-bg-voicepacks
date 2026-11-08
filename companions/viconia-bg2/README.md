@@ -1,6 +1,6 @@
 # Viconia (BG2) — original BG2/ToB companion voice
 
-Version 1.0.0. A standalone player voicepack for BG:EE, BG:EE + Siege of
+Version 1.0.1. A standalone player voicepack for BG:EE, BG:EE + Siege of
 Dragonspear, BG2:EE and EET using the EE 2.6-style soundset table.
 This does not support the original/classic BG1 or BG2 engines.
 
@@ -56,8 +56,8 @@ mod's source folder by archive extraction are not installed.
 Use WeiDU's **Re-install** option. Merely copying WAVs, or an install command
 that treats an already-installed component as satisfied, is insufficient.
 If other mods were installed after this pack, do not start a blind reinstall:
-WeiDU may need to reinstall those later components. A duplicate/orphan
-`VICOB2` table column is rejected rather than silently adding another.
+WeiDU may need to reinstall those later components. An existing `VICOB2` table
+column or menu entry is rewritten rather than creating a duplicate registration.
 
 To remove this pack, run the same installer and choose **Uninstall**.
 
@@ -72,7 +72,7 @@ To remove this pack, run the same installer and choose **Uninstall**.
 - Format reference: [IESDP CHARSND](https://gibberlings3.github.io/iesdp/files/2da/2da_bgee/charsnd.htm).
 
 The installer uses the target game's selected language folder and writes both
-sound/text references and the voice-menu name. It requires a compatible
-99-row `charsnd.2da` table and rejects unsupported layouts before copying
-audio. Separate installer tests exercise BGEE, SoD, BG2EE and EET identities;
+sound/text references and the voice-menu name. It extends an old 30-row
+`charsnd.2da` table to the EE layout and rewrites its owned registration.
+Separate installer tests exercise BGEE, SoD, BG2EE and EET identities;
 these are not a substitute for in-game playback testing.
