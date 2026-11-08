@@ -71,9 +71,10 @@ def setup(root: Path, files: dict[str, bytes], game: str, language: str, fixture
 
 
 def verify_package(files: dict[str, bytes], source: Path, manifest: dict) -> dict:
-    assert len(files) == 32, (len(files), sorted(files))
+    assert len(files) == 34, (len(files), sorted(files))
+    assert {f"{MOD}/tph/cbvp_write_soundset.tpa", f"{MOD}/tph/cbvp_m_cdsnd.lua"} <= set(files)
     provenance = json.loads(files[f"{MOD}/provenance.json"])
-    assert provenance["menu_name"] == "Garithos" and provenance["version"] == "1.1.0"
+    assert provenance["menu_name"] == "Garithos" and provenance["version"] == "1.1.1"
     assert common.sha256(files[f"{MOD}/tph/cd_add_soundset.tph"]) == "a581fae61b165c0c8af8a6ad7136b7b1b825e14d379c528bfb89453a06f843c5"
     assert common.sha256(files[f"setup-{MOD}.exe"]) == "0d17e26e3f3ef5b36796eb0ee8ae73cb851d8b62c9702c2e224da2945caafb75"
     clips = {x["source_file"]: x for x in manifest["clips"]}
@@ -171,11 +172,11 @@ def positive(work: Path, files: dict[str, bytes], fixtures: Path, manifest: dict
     return results
 
 
-def negatives(work: Path, files: dict[str, bytes], fixtures: Path) -> list[dict]:
+def changed_inputs(work: Path, files: dict[str, bytes], fixtures: Path) -> list[dict]:
     results = []
-    for case in ("classic", "old-table", "missing-table", "malformed-table", "duplicate-column", "orphan-menu"):
+    for case in ("old-table", "missing-table", "malformed-table", "duplicate-column", "orphan-menu"):
         root = work / case
-        previous = setup(root, files, "classic" if case == "classic" else "bgee", "en_us", fixtures,
+        previous = setup(root, files, "bgee", "en_us", fixtures,
                          count=30 if case == "old-table" else 99, missing=case == "missing-table")
         if case == "malformed-table":
             lines = previous.decode("ascii").splitlines()
@@ -195,18 +196,22 @@ def negatives(work: Path, files: dict[str, bytes], fixtures: Path) -> list[dict]
         if case == "orphan-menu":
             with (root / "override/M_cdsnd.lua").open("ab") as stream:
                 stream.write(b'  filenames_stringrefs [ "CGARIT" ] = {1, 2}\n')
-        before = resources(root)
-        try:
-            output = common.run_weidu(root, MOD, "en_us")
-        except AssertionError as exc:
-            output = str(exc)
-        expected = ("requires Baldur's Gate" if case == "classic" else
-                    "registration already exists" if case in ("duplicate-column", "orphan-menu") else
-                    "older or incompatible soundset layout")
-        assert expected in output and "SUCCESSFULLY INSTALLED" not in output, (case, output[-2500:])
-        assert resources(root) == before, (case, "Rejected install changed game resources")
-        results.append({"case": case, "rejectedWithoutResourceChanges": True})
-        print(f"PASS rejection: {case}", flush=True)
+        # The untouched fixture table lives in its BIF; changed-layout cases
+        # create an override explicitly. Preserve the BIF bytes otherwise.
+        table_path = root / "override/charsnd.2da"
+        previous = b"" if case == "missing-table" else (table_path.read_bytes() if table_path.exists() else previous)
+        output = common.run_weidu(root, MOD, "en_us")
+        assert "SUCCESSFULLY INSTALLED" in output and "SKIPPING:" not in output, (case, output[-2500:])
+        if case == "missing-table":
+            assert "CHARSND.2DA is unavailable;" in output and not (root / "override/charsnd.2da").exists()
+        else:
+            common.check_registration(root, files, MOD, "bgee", "en_us", previous, 23)
+            again = common.run_weidu(root, MOD, "en_us")
+            assert "SUCCESSFULLY INSTALLED" in again and "SKIPPING:" not in again
+            common.check_registration(root, files, MOD, "bgee", "en_us", previous, 23)
+            common.run_weidu(root, MOD, "en_us", uninstall=True)
+        results.append({"case": case, "writeThrough": True})
+        print(f"PASS changed input: {case}", flush=True)
     return results
 
 
@@ -223,11 +228,11 @@ def main() -> None:
         files = {name: archive.read(name) for name in archive.namelist()}
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     work = Path(tempfile.mkdtemp(prefix="garithos-tests-", dir=common.ROOT / "_work"))
-    report = {"version": "1.1.0", "archiveSha256": common.sha256(args.archive.read_bytes()),
+    report = {"version": "1.1.1", "archiveSha256": common.sha256(args.archive.read_bytes()),
               "scope": "Real WeiDU in disposable fixtures; no live game installation or engine playtest",
               "package": verify_package(files, args.source, manifest)}
     report["positive"] = positive(work, files, args.fixtures, manifest)
-    report["negative"] = negatives(work, files, args.fixtures)
+    report["changedInput"] = changed_inputs(work, files, args.fixtures)
     assert common.tree(args.source) == source_before
     report["userSourceUnchanged"] = True
     report["capturedFixtureHashes"] = common.tree(args.fixtures)

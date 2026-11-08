@@ -8,11 +8,11 @@ import re
 import wave
 from pathlib import Path
 
-from build_release import HELPER_SHA256, PREFLIGHT, ROOT, sha256, write_zip
+from build_release import HELPER_SHA256, PREFLIGHT, ROOT, WRITE_THROUGH_FUNCTION, sha256, write_zip
 
 MOD = "cd_garith"
 PREFIX = "CGARIT"
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 WEIDU_SHA256 = "0d17e26e3f3ef5b36796eb0ee8ae73cb851d8b62c9702c2e224da2945caafb75"
 
 # The supplied filenames already follow the documented legacy BG2 convention.
@@ -43,28 +43,6 @@ SLOTS = {
     "1": ("criticalmiss", "Critical miss", 66, 66),
 }
 
-DUPLICATE_GUARD = r"""
-// Normal WeiDU reinstall removes this pack first. Reject orphan registrations.
-COPY_EXISTING ~charsnd.2da~ ~override~
-  COUNT_2DA_COLS garith_cols
-  READ_2DA_ENTRIES_NOW garith_header (garith_cols - 1)
-  FOR (garith_col = 0; garith_col < garith_cols - 1; ++garith_col) BEGIN
-    READ_2DA_ENTRY_FORMER garith_header 0 garith_col garith_header_name
-    PATCH_IF (~%garith_header_name%~ STRING_EQUAL_CASE ~CGARIT~) BEGIN
-      PATCH_FAIL @73
-    END
-  END
-  BUT_ONLY
-
-ACTION_IF FILE_EXISTS_IN_GAME ~M_cdsnd.lua~ BEGIN
-  COPY_EXISTING ~M_cdsnd.lua~ ~override~
-    COUNT_REGEXP_INSTANCES ~^[ %TAB%]*filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['"]CGARIT['"][ %TAB%]*\][ %TAB%]*=~ garith_menu_count
-    PATCH_IF (garith_menu_count > 0) BEGIN PATCH_FAIL @73 END
-    BUT_ONLY
-END
-"""
-
-
 def build(source: Path, manifest_path: Path, helper: Path, weidu: Path,
           output: Path) -> Path:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -87,6 +65,8 @@ def build(source: Path, manifest_path: Path, helper: Path, weidu: Path,
     files = {
         f"setup-{MOD}.exe": weidu_bytes,
         f"{MOD}/tph/cd_add_soundset.tph": helper_bytes,
+        f"{MOD}/tph/cbvp_m_cdsnd.lua": b"filenames_stringrefs = {}\n",
+        f"{MOD}/tph/cbvp_write_soundset.tpa": WRITE_THROUGH_FUNCTION.encode("utf-8"),
     }
     for name, record in portraits.items():
         assert re.fullmatch(r"[a-z0-9]+\.bmp", name)
@@ -134,13 +114,12 @@ DESIGNATED 0
 LABEL ~Chriz-Garithos-Soundset~
 
 {PREFLIGHT}
-{DUPLICATE_GUARD}
-INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~
+INCLUDE ~%MOD_FOLDER%/tph/cbvp_write_soundset.tpa~
 
 // Explicit allowlist; unrelated or retired WAVs must not fill absent slots.
 {chr(10).join(copy_lines)}
 
-LAF cd_add_soundset
+LAF cbvp_write_soundset
   INT_VAR
 {chr(10).join(calls)}
     cd_select_name       = RESOLVE_STR_REF(@70)
@@ -152,8 +131,7 @@ END
         "@0 = ~Garithos - player voicepack~", *translations,
         "@70 = ~Garithos~",
         "@71 = ~This voicepack requires Baldur's Gate: Enhanced Edition (with or without Siege of Dragonspear), Baldur's Gate II: Enhanced Edition, or Enhanced Edition Trilogy (EET).~",
-        "@72 = ~This voicepack requires the EE 2.6 soundset table (charsnd.2da rows 1-99). Your game has an older or incompatible soundset layout.~",
-        "@73 = ~A Garithos (CGARIT) soundset registration already exists. Uninstall its original installer before adding this package; no duplicate registration was added.~", "",
+        "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~", "",
     ])
     files[f"{MOD}/{MOD}.tp2"] = tp.encode("ascii")
     files[f"{MOD}/english/setup.tra"] = tra.encode("ascii")
@@ -204,7 +182,8 @@ CHANGES FROM 1.0.0 (the supplied Lord Garithos v2.zip)
 SUPPORTED GAMES
 Baldur's Gate: Enhanced Edition, with or without Siege of Dragonspear;
 Baldur's Gate II: Enhanced Edition; Enhanced Edition Trilogy (EET).
-Requires the Enhanced Edition 2.6-style 99-row soundset table.
+The installer extends older CHARSND.2DA tables to the EE layout and rewrites
+Garithos's existing registration when present.
 Not an installer for the original non-Enhanced BG1/BG2 games or Icewind Dale.
 English audio and subtitles are installed into the language you select.
 

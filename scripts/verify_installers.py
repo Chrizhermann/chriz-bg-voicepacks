@@ -160,14 +160,26 @@ def check_registration(root: Path, files: dict[str, bytes], mod: str, game: str,
     before_header, before_rows = table(previous)
     after_data = (root / "override/charsnd.2da").read_bytes()
     header, rows = table(after_data)
-    assert header == before_header + [prefix], (game, mod, header)
-    assert set(rows) == set(before_rows)
-    assert all(rows[row][:-1] == before_rows[row] for row in rows), (game, mod, "changed original column")
+    own_columns = [i for i, value in enumerate(header) if value.upper() == prefix]
+    assert len(own_columns) == 1, (game, mod, "owned column count", header)
+    own_column = own_columns[0]
+    before_own = next((i for i, value in enumerate(before_header) if value.upper() == prefix), None)
+    assert [value for i, value in enumerate(header) if i != own_column] == [
+        value for i, value in enumerate(before_header) if i != before_own], (game, mod, "changed other headers")
+    assert set(range(1, 100)) <= set(rows), (game, mod, "missing normalized rows")
+    for row, values in before_rows.items():
+        assert row in rows, (game, mod, "lost old row", row)
+        before_values = values[:]
+        if before_own is not None:
+            del before_values[before_own]
+        after_values = rows[row][:]
+        del after_values[own_column]
+        assert after_values == before_values, (game, mod, "changed another soundset", row)
     tlk = tlk_entries((root / f"lang/{language}/dialog.tlk").read_bytes())
     expected = {slot_rows(game)[key]: strings[ref] for key, ref in calls.items() if key != "select_name"}
     assert len(expected) == slots
     for row, values in rows.items():
-        ref = int(values[-1])
+        ref = int(values[own_column])
         if row in expected:
             assert tlk[ref] == expected[row], (game, mod, row, tlk[ref], expected[row])
         else:
@@ -201,7 +213,8 @@ def positive_matrix(work: Path, release_dir: Path, cache: Path, fixture_dir: Pat
             ident, mod, slots, _ = pack
             files = unpack_release(release_dir, root, pack)
             source = original_files(cache, pack)
-            assert set(files) == set(source)
+            added = {f"{mod}/tph/cbvp_m_cdsnd.lua", f"{mod}/tph/cbvp_write_soundset.tpa"}
+            assert set(files) == set(source) | added
             for name, data in source.items():
                 if not name.endswith((".tp2", ".tra")):
                     assert files[name] == data, (ident, name, "payload changed")
@@ -236,30 +249,37 @@ def positive_matrix(work: Path, release_dir: Path, cache: Path, fixture_dir: Pat
     return results
 
 
-def rejection_matrix(work: Path, release_dir: Path) -> list[dict]:
+def changed_input_matrix(work: Path, release_dir: Path) -> list[dict]:
     results = []
-    cases = [("classic", 99, False), ("bgee", 30, False), ("bgee", 99, True)]
-    for index, (game, count, missing) in enumerate(cases):
-        root = work / f"rejected-{index}"
-        fixture(root, game, "en_us", None, row_count=count, missing_table=missing)
-        before = tree(root / "override")
-        tlk = (root / "lang/en_us/dialog.tlk").read_bytes()
+    cases = [("old-table", 30, False), ("missing-table", 99, True)]
+    for index, (case, count, missing) in enumerate(cases):
+        root = work / f"changed-{index}"
+        game = "bgee"
+        base_table = fixture(root, game, "en_us", None, row_count=count, missing_table=missing)
+        override_table = root / "override/charsnd.2da"
         for pack in PACKS:
             unpack_release(release_dir, root, pack)
             mod = pack[1]
-            try:
-                output = run_weidu(root, mod, "en_us")
-            except AssertionError as error:
-                # An old table fails in the controlled preflight patch before audio.
-                output = str(error)
-                assert count != 99 and "older or incompatible soundset layout" in output
-            assert "SUCCESSFULLY INSTALLED" not in output
-            assert "SKIPPING:" in output or "older or incompatible soundset layout" in output
-            assert tree(root / "override") == before
-            assert (root / "lang/en_us/dialog.tlk").read_bytes() == tlk
-            assert not tree(root / "lang/en_us/sounds")
-        results.append({"game": game, "rows": count, "missingTable": missing, "packsRejectedWithoutChanges": 14})
-        print(f"PASS rejection {game}/{count} rows/missing={missing}: all 14", flush=True)
+            # The fixture keeps CHARSND.2DA in the biff, so a pack that finds no override
+            # copy starts from the biff table.
+            before = b"" if missing else (override_table.read_bytes() if override_table.exists() else base_table)
+            output = run_weidu(root, mod, "en_us")
+            assert "SUCCESSFULLY INSTALLED" in output and "SKIPPING:" not in output
+            if missing:
+                assert f"CHARSND.2DA is unavailable;" in output
+                assert not (root / "override/charsnd.2da").exists()
+            else:
+                check_registration(root, {str(p.relative_to(root)).replace("\\", "/"): p.read_bytes()
+                                          for p in (root / mod).rglob("*") if p.is_file() and "backup" not in p.parts},
+                                   mod, game, "en_us", before, pack[2])
+                again = run_weidu(root, mod, "en_us")
+                assert "SUCCESSFULLY INSTALLED" in again and "SKIPPING:" not in again
+                check_registration(root, {str(p.relative_to(root)).replace("\\", "/"): p.read_bytes()
+                                          for p in (root / mod).rglob("*") if p.is_file() and "backup" not in p.parts},
+                                   mod, game, "en_us", before, pack[2])
+                run_weidu(root, mod, "en_us", uninstall=True)
+        results.append({"case": case, "rows": count, "packsWriteThrough": 14})
+        print(f"PASS changed input {case}: all 14", flush=True)
     return results
 
 
@@ -273,7 +293,7 @@ if __name__ == "__main__":
     work = Path(tempfile.mkdtemp(prefix="installer-tests-", dir=ROOT / "_work"))
     report = {"version": VERSION, "scope": "Actual WeiDU in disposable fixtures; no game engine launched", "work": str(work)}
     report["positive"] = positive_matrix(work, args.release_dir, args.source_dir, args.fixture_dir)
-    report["negative"] = rejection_matrix(work, args.release_dir)
+    report["changedInput"] = changed_input_matrix(work, args.release_dir)
     if args.fixture_dir:
         report["capturedResourceHashes"] = {str(p.relative_to(args.fixture_dir)): sha256(p.read_bytes())
                                              for p in args.fixture_dir.rglob("*") if p.suffix.lower() in (".ids", ".2da")}

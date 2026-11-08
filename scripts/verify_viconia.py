@@ -20,7 +20,7 @@ from build_ajantis import GameResources
 import verify_installers as common
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 HELPER_SHA256 = "a581fae61b165c0c8af8a6ad7136b7b1b825e14d379c528bfb89453a06f843c5"
 # Independent expectations: original companion CRE tables, not the builder's slot map.
 VARIANTS = {
@@ -116,7 +116,8 @@ def read_package(root: Path, *, legacy: bool = False) -> dict[str, bytes]:
     executables = [p for p in root.iterdir() if p.is_file() and p.name.lower() == f"setup-{MOD}.exe"]
     assert len(executables) == 1, f"Expected one setup-{MOD}.exe in {root}"
     files[f"setup-{MOD}.exe"] = executables[0].read_bytes()
-    for required in (f"{MOD}/{MOD}.tp2", f"{MOD}/english/setup.tra", f"{MOD}/tph/cd_add_soundset.tph"):
+    for required in (f"{MOD}/{MOD}.tp2", f"{MOD}/english/setup.tra", f"{MOD}/tph/cd_add_soundset.tph",
+                     f"{MOD}/tph/cbvp_write_soundset.tpa", f"{MOD}/tph/cbvp_m_cdsnd.lua"):
         assert required in files, f"Missing {required}"
     return files
 
@@ -373,8 +374,9 @@ def inspect_registration(root: Path, files: dict[str, bytes], game: str, languag
                          previous: bytes, baseline: dict[str, str], original_tlks: dict[str, bytes]) -> None:
     common.check_registration(root, files, MOD, game, language, previous, len(EXPECTED))
     assert len(active_log(root)) == 1
-    _, rows = common.table((root / "override/charsnd.2da").read_bytes())
-    occupied = {row: int(values[-1]) for row, values in rows.items() if int(values[-1]) != -1}
+    header, rows = common.table((root / "override/charsnd.2da").read_bytes())
+    own = next(i for i, value in enumerate(header) if value.upper() == PREFIX)
+    occupied = {row: int(values[own]) for row, values in rows.items() if int(values[own]) != -1}
     expected_rows = {common.slot_rows(game)[key] for key, _ in EXPECTED.values()}
     assert set(occupied) == expected_rows and len(occupied) == len(EXPECTED)
     lua = (root / "override/M_cdsnd.lua").read_text(encoding="utf-8")
@@ -417,9 +419,9 @@ def positive_case(work: Path, files: dict[str, bytes], fixtures: Path, game: str
             "reinstall": "passed", "byteExactResourceRestoration": "passed"}
 
 
-def negative_case(work: Path, files: dict[str, bytes], fixtures: Path, case: str) -> dict:
-    root = work / f"negative-{case}"
-    game = "classic" if case == "classic" else "bgee"
+def changed_input_case(work: Path, files: dict[str, bytes], fixtures: Path, case: str) -> dict:
+    root = work / f"changed-{case}"
+    game = "bgee"
     previous = setup_fixture(root, game, "en_us", fixtures,
                              row_count=30 if case == "old-table" else 99,
                              missing_table=case == "missing-table")
@@ -436,23 +438,25 @@ def negative_case(work: Path, files: dict[str, bytes], fixtures: Path, case: str
     if case == "duplicate-menu":
         with (root / "override/M_cdsnd.lua").open("ab") as stream:
             stream.write(f"filenames_stringrefs['{PREFIX}'] = {{1, 2}}\n".encode("ascii"))
+    # The untouched fixture table lives in its BIF; changed-layout cases create
+    # an override explicitly. Preserve the BIF bytes as the baseline otherwise.
+    table_path = root / "override/charsnd.2da"
+    previous = b"" if case == "missing-table" else (table_path.read_bytes() if table_path.exists() else previous)
     baseline, original_tlks = game_tree(root), tlk_snapshot(root)
     copy_package(files, root)
-    try:
-        output = run_step(root, "en_us", "rejected-install")
-    except AssertionError as error:
-        output = str(error)
-    assert "SUCCESSFULLY INSTALLED" not in output, (case, output)
-    assert any(marker in output for marker in ("SKIPPING:", "NOT INSTALLED DUE TO ERRORS")), (case, output)
-    if case in ("old-table", "malformed-table", "missing-table"):
-        assert "older or incompatible soundset layout" in output, (case, output)
-    if case.startswith("duplicate-"):
-        assert f"{MENU} is already registered" in output, (case, output)
-    assert game_tree(root) == baseline, (case, "Failed preflight changed game resources")
-    assert tlk_snapshot(root) == original_tlks, (case, "Failed preflight changed strings")
-    assert not active_log(root)
-    print(f"PASS rejection {case}: no game-resource or TLK changes", flush=True)
-    return {"case": case, "rejectedWithoutGameChanges": True}
+    output = run_step(root, "en_us", "changed-install")
+    assert "SUCCESSFULLY INSTALLED" in output and "SKIPPING:" not in output, (case, output)
+    if case == "missing-table":
+        assert "CHARSND.2DA is unavailable;" in output and not (root / "override/charsnd.2da").exists()
+    else:
+        inspect_registration(root, files, game, "en_us", previous, baseline, original_tlks)
+        output = run_step(root, "en_us", "changed-reinstall")
+        assert "SUCCESSFULLY INSTALLED" in output and "SKIPPING:" not in output
+        inspect_registration(root, files, game, "en_us", previous, baseline, original_tlks)
+        output = run_step(root, "en_us", "changed-uninstall", uninstall=True)
+        assert "SUCCESSFULLY REMOVED" in output and assert_restored(root, baseline, original_tlks, "en_us") is None
+    print(f"PASS changed input {case}: decided registration written", flush=True)
+    return {"case": case, "writeThrough": True}
 
 
 def legacy_case(work: Path, files: dict[str, bytes], legacy: dict[str, bytes], fixtures: Path,
@@ -530,13 +534,13 @@ def main() -> None:
     work = Path(tempfile.mkdtemp(prefix=f"viconia-{args.variant}-installer-tests-", dir=args.work_dir))
     report = {"version": VERSION, "variant": args.variant,
               "scope": "Actual WeiDU in disposable fixtures; source games read-only; no engine launched",
-              "work": str(work), "provenance": provenance, "positive": [], "negative": [], "legacy": []}
+              "work": str(work), "provenance": provenance, "positive": [], "changedInput": [], "legacy": []}
     try:
         for game in GAMES:
             for language in LANGUAGES:
                 report["positive"].append(positive_case(work, files, args.fixtures, game, language))
-        for case in ("classic", "old-table", "malformed-table", "missing-table", "duplicate-column", "duplicate-menu"):
-            report["negative"].append(negative_case(work, files, args.fixtures, case))
+        for case in ("old-table", "malformed-table", "missing-table", "duplicate-column", "duplicate-menu"):
+            report["changedInput"].append(changed_input_case(work, files, args.fixtures, case))
         if legacy:
             for lost_tlk_flush in (False, True):
                 report["legacy"].append(legacy_case(work, files, legacy, args.fixtures, lost_tlk_flush=lost_tlk_flush))

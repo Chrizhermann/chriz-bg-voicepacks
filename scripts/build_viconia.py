@@ -12,9 +12,9 @@ import wave
 from pathlib import Path
 
 from build_ajantis import GameResources, sha256
-from build_release import HELPER_SHA256, PREFLIGHT, write_zip
+from build_release import HELPER_SHA256, PREFLIGHT, WRITE_THROUGH_FUNCTION, write_zip
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 # Original BGEE VICONI.CRE slot -> helper name, TRA id, resource suffix.
 # BGEE's 35-38 are rare selection despite their legacy SELECT_ACTION names.
@@ -82,28 +82,6 @@ VARIANTS = {
 }
 # CRE rows that can feed a player event in either era; the remainder are NPC-only.
 PLAYER_SOURCE_SLOTS = set(range(1, 39)) | {53} | set(range(63, 74)) | set(range(75, 100))
-
-DUPLICATE_GUARD = r"""
-// Fail closed on an orphan/duplicate column; normal WeiDU reinstall removes it first.
-COPY_EXISTING ~charsnd.2da~ ~override~
-  COUNT_2DA_COLS {var}_cols
-  READ_2DA_ENTRIES_NOW {var}_header ({var}_cols - 1)
-  FOR ({var}_col = 0; {var}_col < {var}_cols - 1; ++{var}_col) BEGIN
-    READ_2DA_ENTRY_FORMER {var}_header 0 {var}_col {var}_header_name
-    PATCH_IF (~%{var}_header_name%~ STRING_EQUAL_CASE ~{prefix}~) BEGIN
-      PATCH_FAIL @73
-    END
-  END
-  BUT_ONLY
-
-ACTION_IF FILE_EXISTS_IN_GAME ~M_cdsnd.lua~ BEGIN
-  COPY_EXISTING ~M_cdsnd.lua~ ~override~
-    COUNT_REGEXP_INSTANCES ~^[ %TAB%]*filenames_stringrefs[ %TAB%]*\[[ %TAB%]*['"]{prefix}['"][ %TAB%]*\][ %TAB%]*=~ {var}_menu_count
-    PATCH_IF ({var}_menu_count > 0) BEGIN PATCH_FAIL @73 END
-    BUT_ONLY
-END
-"""
-
 
 def subtitle(text: str) -> str:
     cleaned = re.sub(r"^\[VICONIA \d+\]\s*", "", text).strip()
@@ -190,11 +168,9 @@ def build(variant: str, source: Path, output: Path, helper: Path, weidu: Path, f
         tra_lines += [f"// {spec['source_name']} {primary}.CRE slot {row['source_slot']} -> {row['slot_key']}; {row['source_resref']}",
                       f"@{row['tra']} = ~{row['subtitle']}~ [{row['target_resref']}]"]
     tra_lines += ["", f"@70 = ~{spec['menu']}~",
-                  "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
-                  "@72 = ~This voicepack requires the EE 2.6 soundset table (charsnd.2da rows 1-99). Your game has an older or incompatible soundset layout.~",
-                  f"@73 = ~{spec['menu']} is already registered. Uninstall the old {spec['menu']} component before installing this replacement.~"]
+                   "@71 = ~This voicepack requires BG:EE (with or without SoD), BG2:EE, or EET.~",
+                   "@72 = ~CHARSND.2DA was unavailable; audio was installed but this pack was not registered.~"]
     (mod_root / "english/setup.tra").write_text("\n".join(tra_lines) + "\n", encoding="utf-8")
-    guard = DUPLICATE_GUARD.format(var=prefix.lower(), prefix=prefix)
     tp2 = f"""BACKUP ~{mod}/backup~
 SUPPORT ~https://github.com/Chrizhermann/chriz-bg-voicepacks~
 VERSION ~{VERSION}~
@@ -206,8 +182,7 @@ DESIGNATED 0
 LABEL ~{spec['label']}~
 
 {PREFLIGHT}
-{guard}
-INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~
+INCLUDE ~%MOD_FOLDER%/tph/cbvp_write_soundset.tpa~
 
 // Explicit allowlist: an archive overlay may leave retired WAVs in the source
 // folder. Never copy those files back; empty slots must remain truly silent.
@@ -215,7 +190,9 @@ INCLUDE ~%MOD_FOLDER%/tph/cd_add_soundset.tph~
     for r in records:
         destination = "override" if r["folder"] == "wav" else "lang/%EE_LANGUAGE%/sounds"
         tp2 += f"COPY ~%MOD_FOLDER%/{r['folder']}/{r['target_resref']}.wav~ ~{destination}/{r['target_resref']}.wav~\n"
-    tp2 += "\nLAF cd_add_soundset\n  INT_VAR\n"
+    (mod_root / "tph/cbvp_m_cdsnd.lua").write_text("filenames_stringrefs = {}\n", encoding="ascii")
+    (mod_root / "tph/cbvp_write_soundset.tpa").write_text(WRITE_THROUGH_FUNCTION, encoding="utf-8")
+    tp2 += "\nLAF cbvp_write_soundset\n  INT_VAR\n"
     tp2 += "".join(f"    cd_{r['slot_key']:<17} = RESOLVE_STR_REF(@{r['tra']})\n" for r in sorted(records, key=lambda r: r["slot_key"]))
     tp2 += f'    cd_select_name       = RESOLVE_STR_REF(@70)\n  STR_VAR cd_name = "{prefix}"\nEND\n'
     (mod_root / f"{mod}.tp2").write_text(tp2, encoding="utf-8")

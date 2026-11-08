@@ -1,7 +1,7 @@
-"""Assemble one release from the unchanged 1.0.1 packs and separately built packs (stdlib only).
+"""Assemble one release from the generated 1.0.2 packs and separately built packs (stdlib only).
 
-The fourteen 1.0.1 archives come from build_release.py and must be byte-identical
-to the published 1.0.1 assets. Ajantis, Viconia and Garithos are built from a
+The fourteen 1.0.2 archives come from build_release.py and must be byte-identical
+to the pinned 1.2.0 generated assets. Ajantis, Viconia and Garithos are built from a
 local game or a supplied soundset by their own scripts; their archives are
 inspected here and listed with the version recorded in their provenance.json.
 """
@@ -17,24 +17,24 @@ from pathlib import Path
 
 from build_release import HELPER_SHA256, PACKS, ROOT, VERSION, sha256
 
-RELEASE = "1.1.0"
+RELEASE = "1.2.0"
 # The bundled setup executable of every 1.0.x pack.
 WEIDU_SHA256 = "0d17e26e3f3ef5b36796eb0ee8ae73cb851d8b62c9702c2e224da2945caafb75"
 PUBLISHED = {
-    "neera": "f2adbfd775f86f9cfbcae37ca1b4aaa1ca9e57876b8952603a56b632aba50fbc",
-    "safana-bg1": "e5b3e7fa69461c333530d61979bf713dfddc693614e95f6cea854e45ae8a541d",
-    "safana-sod": "edd486e85c9521905dd8cba2a5f3fddb846f3ae33b3f36e0308bab89c0432602",
-    "jaheira-bg1": "d8a3bd683fc1c044eceec662414ff8279ea4992053b6c931486097436ad03806",
-    "jaheira-bg2": "5efe01db15944ad675eaf115ba0ca6bbcf76656ffa6c0408096e4c82be5ccf07",
-    "yeslick": "c3c1213cc4ec89002b750788c58cd533d5c765d839c9c6b7c463c9db9ec3f22b",
-    "edwin-bg1": "6c02995b38edc5a021a54afbf544ae3e3ec3fa8f7cf5750aad22eb853a5e5411",
-    "edwin-bg2": "d32e6f5577b95ae73b2113cb2ec83de2952a8c83383b4863d7df5fdcbc6aebc9",
-    "aerie": "04ce446df621ad6def59f5ca922c44a4d9a147ca86a236afdb22df1390ba6775",
-    "imoen-bg1": "cda87d6b56a15437025c536e2ea50194330565adf8a5e55f1cbdbbcaf8de79bb",
-    "imoen-bg2": "043d6216b4cf347a8a28f0d464af4286f01624587e55c14e324d0d21f628be60",
-    "sarevok": "e105f9b296d06677d9d0ba67ffdc3583c90ac13a97ea4dd7d45117f721af7937",
-    "amelyssan": "f67c4e4b87ccafc9272539d212c0211d53e45f8cd76d1a06aabd86239f4b6809",
-    "gromnir-il-khan": "7aaad0379a6cbba87c5b2aa772ad3b53b777ae1d1821194567cfa8288811c9f5",
+    "neera": "b7d029f839062b5e7763de61f541a4922e2cb73d82b6e6c035d8fcdcff3eac94",
+    "safana-bg1": "daf45b3d58901509a05f570269e417ad137dcd920cc4cbfc14fbeafe6272f276",
+    "safana-sod": "eacccb9187a1abaa28d8d8e6171e3437459f1280b04bec9c9c4199e7f33a2be2",
+    "jaheira-bg1": "7167f278446bc9d63485aebf54cefe281d52d6659a496a2c070417fc734322e8",
+    "jaheira-bg2": "1c629463c66b0cc377e35356e560e1d26868eab61124fa704c26d61843df8bcf",
+    "yeslick": "b4118fecf98786bd092056f9039ee6d8591d5419aa09cdb5b8807ba85bd2c7d6",
+    "edwin-bg1": "478b58972a4f247e00c046e02ab6c2c87f3fb520d3b10f037b730ba855061a5b",
+    "edwin-bg2": "131d4db31326c377ddfde2f73009d1bc18e8d62ff0f053d66389d6be684b8e3d",
+    "aerie": "a6c0d61b87803df550dd97cdd9e56e443ee268a06e5751e9b6b4cb2cbba93f18",
+    "imoen-bg1": "7bac3a24dbd5ecdc70afb2b82210c2e6e39061fcb4f2b7803aeb9c911452d098",
+    "imoen-bg2": "98125ee8e3159ec7c968649e769fa1de0073c0d9dc8c41675c62247586ebe3d7",
+    "sarevok": "29589c43eb14191124155b246979270c137af2f1303a70e8df245173d1c31882",
+    "amelyssan": "d16ed2b2b773b5e6caf1b67597eab4c1717ea0014ddbf90e969cc1d808b2693a",
+    "gromnir-il-khan": "ce709ab49aea5db3e6ac1419995301d66c64c9bf13e79f55be1968926a363e0b",
 }
 BUILT = re.compile(r"(?P<ident>[a-z0-9]+(?:-[a-z0-9]+)*)-player-voicepack-v(?P<version>\d+\.\d+\.\d+)\.zip")
 

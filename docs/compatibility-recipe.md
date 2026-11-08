@@ -6,14 +6,16 @@ recut audio, or change the source approach used to curate a pack.
 
 ## What changes
 
-1. Add `VERSION ~1.0.1~` to each TP2.
+1. Add `VERSION ~1.0.2~` to each TP2.
 2. Accept `GAME_IS ~bgee bg2ee eet~`. WeiDU treats BG:EE with SoD as `bgee`;
    `sod` is not a `GAME_IS` keyword. Remove the old BG2/EET-only guard from
    Amelyssan and Gromnir.
-3. Before copying audio, require the EE 2.6 `charsnd.2da` layout: 99 data rows,
-   labeled 1 through 99 in order. Use `COUNT_2DA_COLS` when reading the table
-   so its column header is not mistaken for a data row. Reject missing, old,
-   or incompatible layouts with a useful message.
+3. Write the pack's registration through any existing `charsnd.2da` layout.
+   Extend an old 30-row table with the missing numbered rows through 99, reuse
+   and rewrite an existing owned column, and replace an existing owned menu
+   entry. Use `COUNT_2DA_COLS` when reading the table so its column header is
+   not mistaken for a data row. A missing table cannot receive a registration,
+   but it does not stop the audio install.
 4. Copy the ordinary sound files to `lang/%EE_LANGUAGE%/sounds`, using the
    game language selected in WeiDU. Extended files still go to `override`.
 5. Keep `cd_add_soundset.tph` unchanged. It already switches the row mapping
@@ -65,10 +67,11 @@ The verifier runs the real installers across BG:EE, BG:EE with the SoD marker,
 BG2:EE, and EET fixtures, plus BG:EE/BG2:EE with German game-language folders.
 It validates the 556 assignments against an independent event-to-row map,
 checks that previously installed voices remain intact, exercises reinstall,
-and uninstalls every pack in reverse order. It also confirms all packs reject
-classic BG1, a pre-2.6 table, and a missing table before adding audio or strings.
-WeiDU can retain unused appended TLK strings after uninstall; the verifier
-requires original TLK entries and all original override/sound files to survive.
+and uninstalls every pack in reverse order. It also confirms classic BG1 is
+rejected while old and altered CHARSND.2DA tables are normalized and owned
+registrations are rewritten. WeiDU can retain unused appended TLK strings after
+uninstall; the verifier requires original TLK entries and all original
+override/sound files to survive.
 
 For the 1.0.1 acceptance run, the positive fixtures used the actual CHARSND.2DA
 and SNDSLOT.IDS extracted read-only from the games' DEFAULT.BIF files:
